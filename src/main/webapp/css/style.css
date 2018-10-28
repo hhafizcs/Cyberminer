@@ -1,0 +1,11 @@
+.invalidField {
+	border: 1px solid red;
+}
+
+.container {
+	padding-top: 60px;
+}
+
+.fas {
+	cursor: pointer;
+}
