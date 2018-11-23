@@ -42,22 +42,26 @@ function add() {
 		return;
 	}
 	
-	//ATTN-BEGIN: Modify this code after integration.
-	/*var input = "descriptor=" + $("#descriptor").val() +
-				  "&url=" + $("#url").val() +
-				  "&payment=" + $("#payment").val() +;
-	
+	var requestData =
+	{
+		"descriptor": $("#descriptor").val(),
+		"url": $("#url").val(),
+		"payment": parseInt($("#payment").val())
+	};
+  
 	$.ajax({
 		type: "POST",
-		url: "",
-		data: input,
-		cache: false,
-		success: function() {
-		  getAll();
+		url: "/add",
+		dataType: "text",
+		contentType: 'application/json',
+        data: JSON.stringify(requestData),
+		success: function(response) {
+			alert(response);
+		},
+		error: function(xhr, exception) {
+			alert(exception);
 		}
-	});*/
-	alert("Part Added!");
-	//ATTN-END
+	});
 	
 	$("#descriptor").val("");
 	$("#url").val("");

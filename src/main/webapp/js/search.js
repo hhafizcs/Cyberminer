@@ -4,19 +4,6 @@ var sortType;
 var pageSize;
 var currPage;
 
-//ATTN-BEGIN: Modify this code after integration.
-//var results= [];
-var results = [
-	{ descriptor: "Software Architecture Wikipedia", url: "https://en.wikipedia.org/wiki/Software_architecture" },
-	{ descriptor: "What is a Software Architecture?", url: "https://www.ibm.com/developerworks/rational/library/feb06/eeles/index.html" },
-	{ descriptor: "Software Architecture Coursera", url: "https://www.coursera.org/learn/software-architecture" },
-	{ descriptor: "Software Architecture", url: "https://www.sei.cmu.edu/research-capabilities/all-work/display.cfm?customel_datapageid_4050=21328" },
-	{ descriptor: "How to choose the right software architecture", url: "https://techbeacon.com/top-5-software-architecture-patterns-how-make-right-choice" },
-	{ descriptor: "What is software architecture & software design?", url: "https://www.synopsys.com/software-integrity/resources/knowledge-database/software-architecture.html" },
-	{ descriptor: "Types of Software Architects", url: "https://medium.com/@nvashanin/types-of-software-architects-aa03e359d192" }
-];
-//ATTN-END
-
 $(document).ready(function() {
 	$("#numResultsContainer").hide();
 	$("#resultsContainer").hide();
@@ -88,32 +75,30 @@ function search(page) {
 		return;
     }
 	
-	//ATTN-BEGIN: Modify this code after integration.
-	/*var input = "descriptor=" + searchTxt + 
-				"&type=" + searchType +
-				"&sort=" + sortType;
+	var requestData =
+	{
+		"searchTxt": searchTxt,
+		"type": searchType,
+		"sort": sortType,
+		"page": currPage,
+		"pageSize": pageSize
+	};
   
 	$.ajax({
 		type: "POST",
-		url: "",
-		data: input,
-		cache: false,
+		url: "/search",
+		dataType: "json",
+		contentType: 'application/json',
+        data: JSON.stringify(requestData),
 		success: function(response) {
 		  handleResponse(response);
 		}
-	});*/
-	handleResponse();
-	//ATTN-END
+	});
 }
 
 function handleResponse(response) {
-	//ATTN-BEGIN: Modify this code after integration.
-	//responseObj = JSON.parse(response);
-	//resultSet = responseObj.results;
-	//var numOfResults = responseObj.numOfResults;
-	resultSet = getResultSet();
-	var numOfResults = 7;
-	//ATTN-END
+	var resultSet = response.lines;
+	var numOfResults = response.numOfResults;
 	
 	if(numOfResults > 0) {
 		$("#numResultsTxt").text("Total Results: " + numOfResults);
@@ -124,11 +109,13 @@ function handleResponse(response) {
 				"<div class='row justify-content-center border-top col-md-8 mx-auto p-2 align-items-center'>" +
 					"<div class='col-md-12'>" +
 						"<h6>" + resultSet[i].descriptor + "</h6>" +
-						"<a href='" + resultSet[i].url + "'>" + resultSet[i].url + "</a>" +
+						"<a id='link-" + resultSet[i].id + "' href='" + resultSet[i].url + "' target='_blank'>" + resultSet[i].url + "</a>" +
 					"</div>" +
 				"</div>"
 			);
 		}
+		
+		$('[id*="link-"]').click(linkClicked);
 		
 		handlePaging(numOfResults);
 	
@@ -136,6 +123,25 @@ function handleResponse(response) {
 		$("#resultsContainer").show();
 		$("#pagingContainer").show();
 	}
+}
+
+function linkClicked() {
+	var lineId = $(this).attr("id").substring(5);
+  
+	var requestData =
+	{
+		"lineId": lineId
+	};
+  
+	$.ajax({
+		type: "POST",
+		url: "/update",
+		dataType: "text",
+		contentType: 'application/json',
+        data: JSON.stringify(requestData)
+	});
+	
+	return true;
 }
 
 function handlePaging(numOfResults) {
@@ -263,18 +269,4 @@ function handlePaging(numOfResults) {
 
 		$("#third").addClass("active");
 	}
-}
-
-function getResultSet() {
-	var resultSet = [];
-	
-	var firstIndex = pageSize * (currPage - 1);
-	
-	for(var i = firstIndex; i < firstIndex + pageSize; i++) {
-		if(results[i]) {
-			resultSet.push(results[i]);
-		}
-	}
-	
-	return resultSet
 }
