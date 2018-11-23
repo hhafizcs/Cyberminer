@@ -1,9 +1,6 @@
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.ArrayList;
 
 import javax.servlet.ServletException;
@@ -26,6 +23,10 @@ public class AddService extends HttpServlet {
 	@Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		try {
+			//Create instance of DatabaseHelper
+			
+			DatabaseHelper dbHelper = new DatabaseHelper();
+			
 			//Parse the input
 			
 			JSONObject requestObj = null;
@@ -43,28 +44,21 @@ public class AddService extends HttpServlet {
 			String url = requestObj.getString("url");
 			int payment = requestObj.getInt("payment");
 			
-			//Connect to the database
-			
-			//Connection dbCnx = DriverManager.getConnection("jdbc:mysql://google/cyberminer?cloudSqlInstance=cyberminer-shae:us-central1:cyberminer&socketFactory=com.google.cloud.sql.mysql.SocketFactory&user=root&password=cyberminer&useSSL=false");
-			Connection dbCnx = DriverManager.getConnection("jdbc:mysql://35.188.65.89/cyberminer","root","cyberminer");
-			
 			//Insert the line to the database
 			
-			Statement insertLineStmt = dbCnx.createStatement();
-
-			insertLineStmt.executeUpdate(
+			String insertLineQuery =
 					"INSERT INTO line " + 
 					"(url, descriptor, payment) " + 
-					"VALUES ('" + url + "', '" + descriptor + "', " + payment + ");"
-			, Statement.RETURN_GENERATED_KEYS);
+					"VALUES ('" + url + "', '" + descriptor + "', " + payment + ");";
 			
-            ResultSet insertLineResSet = insertLineStmt.getGeneratedKeys();
+			dbHelper.connect();
+            ResultSet insertLineResSet = dbHelper.executeInsertQueryAndReturnKey(insertLineQuery);
 			
             insertLineResSet.next();
 			
 			int lineId = insertLineResSet.getInt(1);
 			
-			insertLineStmt.close();
+			dbHelper.disconnect();
 			
 			//Generate the Circular Shifts
 			
@@ -77,21 +71,22 @@ public class AddService extends HttpServlet {
 			ArrayList<Line> sortedLines = kwic.getAlphabetizer().getSortedLines();
 			
 			for(int i = 0; i < sortedLines.size(); i++) {
-				Statement insertShiftStmt = dbCnx.createStatement();
-
-				insertShiftStmt.executeUpdate(
+				String insertShiftQuery = 
 						"INSERT INTO shift " +
-						"VALUES (" + lineId + ", '" + sortedLines.get(i).getDescriptor() + "');"
-				);
+						"VALUES (" + lineId + ", '" + sortedLines.get(i).getDescriptor() + "');";
 				
-				insertShiftStmt.close();
+				dbHelper.connect();
+				
+				dbHelper.executeUpdateQuery(insertShiftQuery);
+				
+				dbHelper.disconnect();
 			}
 			
 			//Return the response
 			
 			response.setContentType("application/json");
 			response.setCharacterEncoding("UTF-8");
-		    response.getWriter().write("Line Added!");
+		    response.getWriter().write("Web Page Added!");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

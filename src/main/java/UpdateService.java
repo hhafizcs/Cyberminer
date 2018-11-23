@@ -1,8 +1,5 @@
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.Statement;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -21,6 +18,10 @@ public class UpdateService extends HttpServlet {
 	@Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		try {
+			//Create instance of DatabaseHelper
+			
+			DatabaseHelper dbHelper = new DatabaseHelper();
+			
 			//Parse the input
 			
 			JSONObject requestObj = null;
@@ -36,22 +37,18 @@ public class UpdateService extends HttpServlet {
 			
 			int lineId = requestObj.getInt("lineId");
 			
-			//Connect to the database
-			
-			//Connection dbCnx = DriverManager.getConnection("jdbc:mysql://google/cyberminer?cloudSqlInstance=cyberminer-shae:us-central1:cyberminer&socketFactory=com.google.cloud.sql.mysql.SocketFactory&user=root&password=cyberminer&useSSL=false");
-			Connection dbCnx = DriverManager.getConnection("jdbc:mysql://35.188.65.89/cyberminer","root","cyberminer");
-			
 			//Update the line access frequency
 			
-			Statement updateLineStmt = dbCnx.createStatement();
-
-			updateLineStmt.executeUpdate(
+			String updateLineQuery =
 					"UPDATE line " +
 					"SET access_frequency = access_frequency + 1 " +
-					"WHERE id = " + lineId + ";"
-			);
+					"WHERE id = " + lineId + ";";
 			
-			updateLineStmt.close();
+			dbHelper.connect();
+			
+			dbHelper.executeUpdateQuery(updateLineQuery);
+			
+			dbHelper.disconnect();
 			
 			//Return the response
 			

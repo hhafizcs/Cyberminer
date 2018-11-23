@@ -1,9 +1,6 @@
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.ArrayList;
 
 import javax.servlet.ServletException;
@@ -25,6 +22,10 @@ public class SearchService extends HttpServlet {
 	@Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		try {
+			//Create instance of DatabaseHelper
+			
+			DatabaseHelper dbHelper = new DatabaseHelper();
+			
 			//Parse the input
 			
 			JSONObject requestObj = null;
@@ -45,34 +46,27 @@ public class SearchService extends HttpServlet {
 			int pageSize = requestObj.getInt("pageSize");
 			int offset = (page - 1) * pageSize;
 			
-			//Connect to the database
-			
-			//Connection dbCnx = DriverManager.getConnection("jdbc:mysql://google/cyberminer?cloudSqlInstance=cyberminer-shae:us-central1:cyberminer&socketFactory=com.google.cloud.sql.mysql.SocketFactory&user=root&password=cyberminer&useSSL=false");
-			Connection dbCnx = DriverManager.getConnection("jdbc:mysql://35.188.65.89/cyberminer","root","cyberminer");
-			
 			//Get the number of results
-			
-			Statement numOfResultsStmt = dbCnx.createStatement();
 			
 			String numOfResultsQuery = getNumOfResultsQuery(searchTerm, searchType);
 
-			ResultSet numOfResultsResSet = numOfResultsStmt.executeQuery(numOfResultsQuery);
+			dbHelper.connect();
+			ResultSet numOfResultsResSet = dbHelper.executeSelectQuery(numOfResultsQuery);
 			
 			numOfResultsResSet.next();
 			
 			int numOfResults = numOfResultsResSet.getInt("numOfResults");
 			
-			numOfResultsStmt.close();
+			dbHelper.disconnect();
 			
 			//Get the lines
 			
 			ArrayList<Line> lines = new ArrayList<Line>();
 			
-			Statement linesStmt = dbCnx.createStatement();
-			
 			String linesQuery = getLinesQuery(searchTerm, searchType, sortType, page, pageSize, offset);
 
-			ResultSet linesResSet = linesStmt.executeQuery(linesQuery);
+			dbHelper.connect();
+			ResultSet linesResSet = dbHelper.executeSelectQuery(linesQuery);
 			
 			while (linesResSet.next())
 			{
@@ -83,7 +77,7 @@ public class SearchService extends HttpServlet {
 				lines.add(line);
 			}
 			
-			linesStmt.close();
+			dbHelper.disconnect();
 			
 			//Create the json response object
 			
@@ -122,25 +116,21 @@ public class SearchService extends HttpServlet {
 			for(int i = 1; i < splitSearchTerm.length; i++) {
 				numOfResultsQuery += "OR shifted_descriptor LIKE '%" + splitSearchTerm[i] + "%' ";
 			}
-			
-			numOfResultsQuery += ";";
 		} else if (searchType.equals("not")) {
 			numOfResultsQuery += "WHERE shifted_descriptor NOT LIKE '%" + splitSearchTerm[0] + "%' ";
 			
 			for(int i = 1; i < splitSearchTerm.length; i++) {
 				numOfResultsQuery += "AND shifted_descriptor NOT LIKE '%" + splitSearchTerm[i] + "%' ";
 			}
-			
-			numOfResultsQuery += ";";
 		} else if (searchType.equals("and")) {
 			numOfResultsQuery += "WHERE shifted_descriptor LIKE '%" + splitSearchTerm[0] + "%' ";
 			
 			for(int i = 1; i < splitSearchTerm.length; i++) {
 				numOfResultsQuery += "AND shifted_descriptor LIKE '%" + splitSearchTerm[i] + "%' ";
 			}
-			
-			numOfResultsQuery += ";";
 		}
+		
+		numOfResultsQuery += ";";
 		
 		return numOfResultsQuery;
 	}
@@ -154,23 +144,29 @@ public class SearchService extends HttpServlet {
 		String[] splitSearchTerm = searchTerm.split(" ");
 		
 		if(searchType.equals("or")) {
-			linesQuery += "AND shifted_descriptor LIKE '%" + splitSearchTerm[0] + "%' ";
+			linesQuery += "AND (shifted_descriptor LIKE '%" + splitSearchTerm[0] + "%' ";
 			
 			for(int i = 1; i < splitSearchTerm.length; i++) {
 				linesQuery += "OR shifted_descriptor LIKE '%" + splitSearchTerm[i] + "%' ";
 			}
+			
+			linesQuery += ") ";
 		} else if (searchType.equals("not")) {
-			linesQuery += "AND shifted_descriptor NOT LIKE '%" + splitSearchTerm[0] + "%' ";
+			linesQuery += "AND (shifted_descriptor NOT LIKE '%" + splitSearchTerm[0] + "%' ";
 			
 			for(int i = 1; i < splitSearchTerm.length; i++) {
 				linesQuery += "AND shifted_descriptor NOT LIKE '%" + splitSearchTerm[i] + "%' ";
 			}
+			
+			linesQuery += ") ";
 		} else if (searchType.equals("and")) {
-			linesQuery += "AND shifted_descriptor LIKE '%" + splitSearchTerm[0] + "%' ";
+			linesQuery += "AND (shifted_descriptor LIKE '%" + splitSearchTerm[0] + "%' ";
 			
 			for(int i = 1; i < splitSearchTerm.length; i++) {
 				linesQuery += "AND shifted_descriptor LIKE '%" + splitSearchTerm[i] + "%' ";
 			}
+			
+			linesQuery += ") ";
 		}
 		
 		if(sortType.equals("alpha")) {

@@ -6,6 +6,7 @@ var currPage;
 var searchTextChangedCounter = 0;
 
 $(document).ready(function() {
+	$("#noResultsContainer").hide();
 	$("#numResultsContainer").hide();
 	$("#resultsContainer").hide();
 	$("#pagingContainer").hide();
@@ -126,6 +127,7 @@ function search(page) {
 	
 	currPage = page;
 	
+	$("#noResultsContainer").hide();
 	$("#numResultsContainer").hide();
 	$("#resultsContainer").hide();
 	$("#pagingContainer").hide();
@@ -191,6 +193,8 @@ function handleResponse(response) {
 		$("#numResultsContainer").show();
 		$("#resultsContainer").show();
 		$("#pagingContainer").show();
+	} else {
+		$("#noResultsContainer").show();
 	}
 }
 

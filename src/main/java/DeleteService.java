@@ -1,8 +1,5 @@
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.Statement;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -21,6 +18,10 @@ public class DeleteService extends HttpServlet {
 	@Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		try {
+			//Create instance of DatabaseHelper
+			
+			DatabaseHelper dbHelper = new DatabaseHelper();
+			
 			//Parse the input
 			
 			JSONObject requestObj = null;
@@ -36,38 +37,35 @@ public class DeleteService extends HttpServlet {
 			
 			int lineId = requestObj.getInt("lineId");
 			
-			//Connect to the database
-			
-			//Connection dbCnx = DriverManager.getConnection("jdbc:mysql://google/cyberminer?cloudSqlInstance=cyberminer-shae:us-central1:cyberminer&socketFactory=com.google.cloud.sql.mysql.SocketFactory&user=root&password=cyberminer&useSSL=false");
-			Connection dbCnx = DriverManager.getConnection("jdbc:mysql://35.188.65.89/cyberminer","root","cyberminer");
-			
 			//Delete the shifts from the database
 			
-			Statement deleteShiftsStmt = dbCnx.createStatement();
-
-			deleteShiftsStmt.executeUpdate(
+			String deleteShiftsQuery =
 					"DELETE FROM shift " + 
-					"WHERE line_id = " + lineId + ";"
-			);
+					"WHERE line_id = " + lineId + ";";
 			
-			deleteShiftsStmt.close();
+			dbHelper.connect();
+			
+			dbHelper.executeUpdateQuery(deleteShiftsQuery);
+			
+			dbHelper.disconnect();
 			
 			//Delete the line from the database
 			
-			Statement deleteLineStmt = dbCnx.createStatement();
-
-			deleteLineStmt.executeUpdate(
+			String deleteLineQuery =
 					"DELETE FROM line " + 
-					"WHERE id = " + lineId + ";"
-			);
+					"WHERE id = " + lineId + ";";
 			
-			deleteLineStmt.close();
+			dbHelper.connect();
+			
+			dbHelper.executeUpdateQuery(deleteLineQuery);
+			
+			dbHelper.disconnect();
 			
 			//Return the response
 			
 			response.setContentType("application/json");
 			response.setCharacterEncoding("UTF-8");
-		    response.getWriter().write("Line Deleted!");
+		    response.getWriter().write("Web Page Deleted!");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

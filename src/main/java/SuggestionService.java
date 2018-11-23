@@ -1,9 +1,6 @@
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.ArrayList;
 
 import javax.servlet.ServletException;
@@ -23,6 +20,10 @@ public class SuggestionService extends HttpServlet {
 	@Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		try {
+			//Create instance of DatabaseHelper
+			
+			DatabaseHelper dbHelper = new DatabaseHelper();
+			
 			//Parse the input
 			
 			JSONObject requestObj = null;
@@ -40,20 +41,14 @@ public class SuggestionService extends HttpServlet {
 			int num = requestObj.getInt("num");
 			int counter = requestObj.getInt("counter");
 			
-			//Connect to the database
-			
-			//Connection dbCnx = DriverManager.getConnection("jdbc:mysql://google/cyberminer?cloudSqlInstance=cyberminer-shae:us-central1:cyberminer&socketFactory=com.google.cloud.sql.mysql.SocketFactory&user=root&password=cyberminer&useSSL=false");
-			Connection dbCnx = DriverManager.getConnection("jdbc:mysql://35.188.65.89/cyberminer","root","cyberminer");
-			
 			//Get the lines
 			
 			ArrayList<String> suggestions = new ArrayList<String>();
 			
-			Statement suggestionsStmt = dbCnx.createStatement();
-			
 			String suggestionsQuery = getSuggestionsQuery(searchTerm, num);
 
-			ResultSet suggestionsResSet = suggestionsStmt.executeQuery(suggestionsQuery);
+			dbHelper.connect();
+			ResultSet suggestionsResSet = dbHelper.executeSelectQuery(suggestionsQuery);
 			
 			while (suggestionsResSet.next())
 			{
@@ -61,7 +56,7 @@ public class SuggestionService extends HttpServlet {
 				suggestions.add(suggestion);
 			}
 			
-			suggestionsStmt.close();
+			dbHelper.disconnect();
 			
 			//Create the json response object
 			
