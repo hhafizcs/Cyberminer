@@ -1,4 +1,5 @@
 $(document).ready(function() {
+	$(".loader").hide();
 	getAll();
 });
 
@@ -12,6 +13,8 @@ function enableDelete() {
 
 function getAll() {
 	$("#resultsContainer").empty();
+	
+	$(".loader").show();
 	
 	var requestData =
 	{
@@ -30,6 +33,10 @@ function getAll() {
         data: JSON.stringify(requestData),
 		success: function(response) {
 		  handleResponse(response);
+		  $(".loader").hide();
+		},
+		error: function() {
+			$(".loader").hide();
 		}
 	});
 }
@@ -56,6 +63,7 @@ function handleResponse(response) {
 
 function deleteClicked() {
 	disableDelete();
+	$(".loader").show();
 	
 	var lineId = $(this).attr("id").substring(7);
   
@@ -71,10 +79,12 @@ function deleteClicked() {
 		contentType: 'application/json',
         data: JSON.stringify(requestData),
 		success: function(response) {
+			$(".loader").hide();
 			alert(response);
 			getAll();
 		},
 		error: function(xhr, exception) {
+			$(".loader").hide();
 			alert(exception);
 			enableDelete();
 		}

@@ -6,6 +6,7 @@ var currPage;
 var searchTextChangedCounter = 0;
 
 $(document).ready(function() {
+	$(".loader").hide();
 	$("#noResultsContainer").hide();
 	$("#numResultsContainer").hide();
 	$("#resultsContainer").hide();
@@ -141,6 +142,7 @@ function search(page) {
     }
 	
 	disableSearch();
+	$(".loader").show();
 	
 	var requestData =
 	{
@@ -160,9 +162,11 @@ function search(page) {
 		success: function(response) {
 			handleResponse(response);
 			enableSearch();
+			$(".loader").hide();
 		},
 		error: function() {
 			enableSearch();
+			$(".loader").hide();
 		}
 	});
 }

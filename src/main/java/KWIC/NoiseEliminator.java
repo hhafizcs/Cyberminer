@@ -20,6 +20,7 @@ public class NoiseEliminator {
 				if(splitLine.get(i).equalsIgnoreCase(noiseWords[j])) {
 					splitLine.remove(i);
 					i--;
+					break;
 				}
 			}
 		}
