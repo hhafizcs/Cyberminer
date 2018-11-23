@@ -3,21 +3,10 @@ var searchType;
 var sortType;
 var pageSize;
 var currPage;
-
-//ATTN-BEGIN: Modify this code after integration.
-//var results= [];
-var results = [
-	{ descriptor: "Software Architecture Wikipedia", url: "https://en.wikipedia.org/wiki/Software_architecture" },
-	{ descriptor: "What is a Software Architecture?", url: "https://www.ibm.com/developerworks/rational/library/feb06/eeles/index.html" },
-	{ descriptor: "Software Architecture Coursera", url: "https://www.coursera.org/learn/software-architecture" },
-	{ descriptor: "Software Architecture", url: "https://www.sei.cmu.edu/research-capabilities/all-work/display.cfm?customel_datapageid_4050=21328" },
-	{ descriptor: "How to choose the right software architecture", url: "https://techbeacon.com/top-5-software-architecture-patterns-how-make-right-choice" },
-	{ descriptor: "What is software architecture & software design?", url: "https://www.synopsys.com/software-integrity/resources/knowledge-database/software-architecture.html" },
-	{ descriptor: "Types of Software Architects", url: "https://medium.com/@nvashanin/types-of-software-architects-aa03e359d192" }
-];
-//ATTN-END
+var searchTextChangedCounter = 0;
 
 $(document).ready(function() {
+	$("#noResultsContainer").hide();
 	$("#numResultsContainer").hide();
 	$("#resultsContainer").hide();
 	$("#pagingContainer").hide();
@@ -39,9 +28,11 @@ $(document).ready(function() {
 		$("#searchTxt").addClass("border border-primary");
     });
 	
+	$('#searchTxt').on('input', searchTxtChanged);
+	
 	$("#searchTxt").keypress(function (e) {
 	    if (e.keyCode == 13) {
-			searchTxt = $("#searchTxt").val();
+	    	searchTxt = $("#searchTxt").val();
 			searchType = $("input[name=searchRadio]:checked").val();
 			sortType = $("input[name=sortRadio]:checked").val();
 			pageSize = $("#pageSize").val();
@@ -52,6 +43,66 @@ $(document).ready(function() {
 	
 	$("#paging ul li").click(pagingClicked);
 });
+
+function disableSearch() {
+	$("#searchTxt").attr("disabled", true);
+	$("#orRadio").attr("disabled", true);
+	$("#andRadio").attr("disabled", true);
+	$("#notRadio").attr("disabled", true);
+	$("#alphaRadio").attr("disabled", true);
+	$("#accessRadio").attr("disabled", true);
+	$("#paymentRadio").attr("disabled", true);
+	$("#pageSize").attr("disabled", true);
+	$("#searchBtn").attr("disabled", true);
+}
+
+function enableSearch() {
+	$("#searchTxt").attr("disabled", false);
+	$("#orRadio").attr("disabled", false);
+	$("#andRadio").attr("disabled", false);
+	$("#notRadio").attr("disabled", false);
+	$("#alphaRadio").attr("disabled", false);
+	$("#accessRadio").attr("disabled", false);
+	$("#paymentRadio").attr("disabled", false);
+	$("#pageSize").attr("disabled", false);
+	$("#searchBtn").attr("disabled", false);
+}
+
+function searchTxtChanged() {
+	if($('#searchTxt').val()) {
+		searchTextChangedCounter++;
+		
+		var requestData =
+		{
+			"searchTxt": $('#searchTxt').val(),
+			"num": 5,
+			"counter": searchTextChangedCounter,
+		};
+	  
+		$.ajax({
+			type: "POST",
+			url: "/suggest",
+			dataType: "json",
+			contentType: 'application/json',
+	        data: JSON.stringify(requestData),
+			success: function(response) {
+				var counter = response.counter;
+				
+				if(counter == searchTextChangedCounter) {
+					var suggestions = response.suggestions;
+					
+					$("#suggList").empty();
+					
+					for(var i = 0; i < suggestions.length; i++) {
+						$("#suggList").append("<option>" + suggestions[i].suggestion + "</option>");
+					}
+				}
+			}
+		});
+	} else {
+		$("#suggList").empty();
+	}
+}
 
 function pagingClicked(event) {
 	var element = event.target;
@@ -76,6 +127,7 @@ function search(page) {
 	
 	currPage = page;
 	
+	$("#noResultsContainer").hide();
 	$("#numResultsContainer").hide();
 	$("#resultsContainer").hide();
 	$("#pagingContainer").hide();
@@ -88,32 +140,36 @@ function search(page) {
 		return;
     }
 	
-	//ATTN-BEGIN: Modify this code after integration.
-	/*var input = "descriptor=" + searchTxt + 
-				"&type=" + searchType +
-				"&sort=" + sortType;
+	disableSearch();
+	
+	var requestData =
+	{
+		"searchTxt": searchTxt,
+		"type": searchType,
+		"sort": sortType,
+		"page": currPage,
+		"pageSize": pageSize
+	};
   
 	$.ajax({
 		type: "POST",
-		url: "",
-		data: input,
-		cache: false,
+		url: "/search",
+		dataType: "json",
+		contentType: 'application/json',
+        data: JSON.stringify(requestData),
 		success: function(response) {
-		  handleResponse(response);
+			handleResponse(response);
+			enableSearch();
+		},
+		error: function() {
+			enableSearch();
 		}
-	});*/
-	handleResponse();
-	//ATTN-END
+	});
 }
 
 function handleResponse(response) {
-	//ATTN-BEGIN: Modify this code after integration.
-	//responseObj = JSON.parse(response);
-	//resultSet = responseObj.results;
-	//var numOfResults = responseObj.numOfResults;
-	resultSet = getResultSet();
-	var numOfResults = 7;
-	//ATTN-END
+	var resultSet = response.lines;
+	var numOfResults = response.numOfResults;
 	
 	if(numOfResults > 0) {
 		$("#numResultsTxt").text("Total Results: " + numOfResults);
@@ -124,18 +180,41 @@ function handleResponse(response) {
 				"<div class='row justify-content-center border-top col-md-8 mx-auto p-2 align-items-center'>" +
 					"<div class='col-md-12'>" +
 						"<h6>" + resultSet[i].descriptor + "</h6>" +
-						"<a href='" + resultSet[i].url + "'>" + resultSet[i].url + "</a>" +
+						"<a id='link-" + resultSet[i].id + "' href='" + resultSet[i].url + "' target='_blank'>" + resultSet[i].url + "</a>" +
 					"</div>" +
 				"</div>"
 			);
 		}
+		
+		$('[id*="link-"]').click(linkClicked);
 		
 		handlePaging(numOfResults);
 	
 		$("#numResultsContainer").show();
 		$("#resultsContainer").show();
 		$("#pagingContainer").show();
+	} else {
+		$("#noResultsContainer").show();
 	}
+}
+
+function linkClicked() {
+	var lineId = $(this).attr("id").substring(5);
+  
+	var requestData =
+	{
+		"lineId": lineId
+	};
+  
+	$.ajax({
+		type: "POST",
+		url: "/update",
+		dataType: "text",
+		contentType: 'application/json',
+        data: JSON.stringify(requestData)
+	});
+	
+	return true;
 }
 
 function handlePaging(numOfResults) {
@@ -263,18 +342,4 @@ function handlePaging(numOfResults) {
 
 		$("#third").addClass("active");
 	}
-}
-
-function getResultSet() {
-	var resultSet = [];
-	
-	var firstIndex = pageSize * (currPage - 1);
-	
-	for(var i = firstIndex; i < firstIndex + pageSize; i++) {
-		if(results[i]) {
-			resultSet.push(results[i]);
-		}
-	}
-	
-	return resultSet
 }
