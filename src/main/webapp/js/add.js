@@ -1,4 +1,6 @@
 $(document).ready(function() {
+	$(".loader").hide();
+	
 	$("#descriptor").val("");
 	$("#url").val("");
 	$("#payment").val("");
@@ -57,6 +59,7 @@ function add() {
 	}
 	
 	disableAdd();
+	$(".loader").show();
 	
 	var requestData =
 	{
@@ -72,11 +75,13 @@ function add() {
 		contentType: 'application/json',
         data: JSON.stringify(requestData),
 		success: function(response) {
+			$(".loader").hide();
 			alert(response);
 			enableAdd();
 		},
-		error: function(xhr, exception) {
-			alert(exception);
+		error: function(xhr, status, error) {
+			$(".loader").hide();
+			alert(error);
 			enableAdd();
 		}
 	});

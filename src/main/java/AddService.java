@@ -44,6 +44,19 @@ public class AddService extends HttpServlet {
 			String url = requestObj.getString("url");
 			int payment = requestObj.getInt("payment");
 			
+			//Generate the Circular Shifts
+			
+			Line line = new Line(descriptor, url);
+			KWIC kwic = new KWIC(line);
+			kwic.setup();
+			
+			ArrayList<Line> sortedLines = kwic.getAlphabetizer().getSortedLines();
+			
+			if(sortedLines.get(0).getDescriptor().equals("")) {
+			    response.sendError(HttpServletResponse.SC_NOT_FOUND, "Invalid Descriptor!");
+			    return;
+			}
+			
 			//Insert the line to the database
 			
 			String insertLineQuery =
@@ -60,15 +73,7 @@ public class AddService extends HttpServlet {
 			
 			dbHelper.disconnect();
 			
-			//Generate the Circular Shifts
-			
-			Line line = new Line(descriptor, url);
-			KWIC kwic = new KWIC(line);
-			kwic.setup();
-			
 			//Insert the Circular Shifts to the database
-			
-			ArrayList<Line> sortedLines = kwic.getAlphabetizer().getSortedLines();
 			
 			for(int i = 0; i < sortedLines.size(); i++) {
 				String insertShiftQuery = 
