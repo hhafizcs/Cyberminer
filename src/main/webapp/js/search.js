@@ -3,6 +3,7 @@ var searchType;
 var sortType;
 var pageSize;
 var currPage;
+var searchTextChangedCounter = 0;
 
 $(document).ready(function() {
 	$("#numResultsContainer").hide();
@@ -26,9 +27,11 @@ $(document).ready(function() {
 		$("#searchTxt").addClass("border border-primary");
     });
 	
+	$('#searchTxt').on('input', searchTxtChanged);
+	
 	$("#searchTxt").keypress(function (e) {
 	    if (e.keyCode == 13) {
-			searchTxt = $("#searchTxt").val();
+	    	searchTxt = $("#searchTxt").val();
 			searchType = $("input[name=searchRadio]:checked").val();
 			sortType = $("input[name=sortRadio]:checked").val();
 			pageSize = $("#pageSize").val();
@@ -39,6 +42,66 @@ $(document).ready(function() {
 	
 	$("#paging ul li").click(pagingClicked);
 });
+
+function disableSearch() {
+	$("#searchTxt").attr("disabled", true);
+	$("#orRadio").attr("disabled", true);
+	$("#andRadio").attr("disabled", true);
+	$("#notRadio").attr("disabled", true);
+	$("#alphaRadio").attr("disabled", true);
+	$("#accessRadio").attr("disabled", true);
+	$("#paymentRadio").attr("disabled", true);
+	$("#pageSize").attr("disabled", true);
+	$("#searchBtn").attr("disabled", true);
+}
+
+function enableSearch() {
+	$("#searchTxt").attr("disabled", false);
+	$("#orRadio").attr("disabled", false);
+	$("#andRadio").attr("disabled", false);
+	$("#notRadio").attr("disabled", false);
+	$("#alphaRadio").attr("disabled", false);
+	$("#accessRadio").attr("disabled", false);
+	$("#paymentRadio").attr("disabled", false);
+	$("#pageSize").attr("disabled", false);
+	$("#searchBtn").attr("disabled", false);
+}
+
+function searchTxtChanged() {
+	if($('#searchTxt').val()) {
+		searchTextChangedCounter++;
+		
+		var requestData =
+		{
+			"searchTxt": $('#searchTxt').val(),
+			"num": 5,
+			"counter": searchTextChangedCounter,
+		};
+	  
+		$.ajax({
+			type: "POST",
+			url: "/suggest",
+			dataType: "json",
+			contentType: 'application/json',
+	        data: JSON.stringify(requestData),
+			success: function(response) {
+				var counter = response.counter;
+				
+				if(counter == searchTextChangedCounter) {
+					var suggestions = response.suggestions;
+					
+					$("#suggList").empty();
+					
+					for(var i = 0; i < suggestions.length; i++) {
+						$("#suggList").append("<option>" + suggestions[i].suggestion + "</option>");
+					}
+				}
+			}
+		});
+	} else {
+		$("#suggList").empty();
+	}
+}
 
 function pagingClicked(event) {
 	var element = event.target;
@@ -75,6 +138,8 @@ function search(page) {
 		return;
     }
 	
+	disableSearch();
+	
 	var requestData =
 	{
 		"searchTxt": searchTxt,
@@ -91,7 +156,11 @@ function search(page) {
 		contentType: 'application/json',
         data: JSON.stringify(requestData),
 		success: function(response) {
-		  handleResponse(response);
+			handleResponse(response);
+			enableSearch();
+		},
+		error: function() {
+			enableSearch();
 		}
 	});
 }

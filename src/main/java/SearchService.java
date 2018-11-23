@@ -39,7 +39,7 @@ public class SearchService extends HttpServlet {
 		    requestObj = new JSONObject(stringBuffer.toString());
 			
 			String searchTerm = requestObj.getString("searchTxt");
-			//String searchType = requestObj.getString("type");
+			String searchType = requestObj.getString("type");
 			String sortType = requestObj.getString("sort");
 			int page = requestObj.getInt("page");
 			int pageSize = requestObj.getInt("pageSize");
@@ -53,12 +53,10 @@ public class SearchService extends HttpServlet {
 			//Get the number of results
 			
 			Statement numOfResultsStmt = dbCnx.createStatement();
+			
+			String numOfResultsQuery = getNumOfResultsQuery(searchTerm, searchType);
 
-			ResultSet numOfResultsResSet = numOfResultsStmt.executeQuery(
-					"SELECT COUNT(DISTINCT line_id) AS numOfResults " + 
-					"FROM shift " + 
-					"WHERE shifted_descriptor LIKE '%" + searchTerm + "%';"
-			);
+			ResultSet numOfResultsResSet = numOfResultsStmt.executeQuery(numOfResultsQuery);
 			
 			numOfResultsResSet.next();
 			
@@ -72,24 +70,7 @@ public class SearchService extends HttpServlet {
 			
 			Statement linesStmt = dbCnx.createStatement();
 			
-			String linesQuery = 
-					"SELECT DISTINCT line_id, id, url, descriptor, access_frequency, payment " + 
-					"FROM line, shift " + 
-					"WHERE shifted_descriptor LIKE '%" + searchTerm + "%' AND line_id = id ";
-			
-			if(sortType.equals("alpha")) {
-				linesQuery += "ORDER BY descriptor ASC ";
-			} else if(sortType.equals("access")) {
-				linesQuery += "ORDER BY access_frequency DESC ";
-			} else if(sortType.equals("payment")) {
-				linesQuery += "ORDER BY payment DESC ";
-			}
-			
-			if(page != 0 && pageSize != 0) {
-				linesQuery += "LIMIT " + offset + ", " + pageSize + ";";
-			} else {
-				linesQuery += ";";
-			}
+			String linesQuery = getLinesQuery(searchTerm, searchType, sortType, page, pageSize, offset);
 
 			ResultSet linesResSet = linesStmt.executeQuery(linesQuery);
 			
@@ -126,5 +107,86 @@ public class SearchService extends HttpServlet {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public String getNumOfResultsQuery(String searchTerm, String searchType) {
+		String numOfResultsQuery =
+				"SELECT COUNT(DISTINCT line_id) AS numOfResults " + 
+				"FROM shift ";
+		
+		String[] splitSearchTerm = searchTerm.split(" ");
+		
+		if(searchType.equals("or")) {
+			numOfResultsQuery += "WHERE shifted_descriptor LIKE '%" + splitSearchTerm[0] + "%' ";
+			
+			for(int i = 1; i < splitSearchTerm.length; i++) {
+				numOfResultsQuery += "OR shifted_descriptor LIKE '%" + splitSearchTerm[i] + "%' ";
+			}
+			
+			numOfResultsQuery += ";";
+		} else if (searchType.equals("not")) {
+			numOfResultsQuery += "WHERE shifted_descriptor NOT LIKE '%" + splitSearchTerm[0] + "%' ";
+			
+			for(int i = 1; i < splitSearchTerm.length; i++) {
+				numOfResultsQuery += "AND shifted_descriptor NOT LIKE '%" + splitSearchTerm[i] + "%' ";
+			}
+			
+			numOfResultsQuery += ";";
+		} else if (searchType.equals("and")) {
+			numOfResultsQuery += "WHERE shifted_descriptor LIKE '%" + splitSearchTerm[0] + "%' ";
+			
+			for(int i = 1; i < splitSearchTerm.length; i++) {
+				numOfResultsQuery += "AND shifted_descriptor LIKE '%" + splitSearchTerm[i] + "%' ";
+			}
+			
+			numOfResultsQuery += ";";
+		}
+		
+		return numOfResultsQuery;
+	}
+	
+	public String getLinesQuery(String searchTerm, String searchType, String sortType, int page, int pageSize, int offset) {
+		String linesQuery = 
+				"SELECT DISTINCT line_id, id, url, descriptor, access_frequency, payment " + 
+				"FROM line, shift " + 
+				"WHERE line_id = id ";
+		
+		String[] splitSearchTerm = searchTerm.split(" ");
+		
+		if(searchType.equals("or")) {
+			linesQuery += "AND shifted_descriptor LIKE '%" + splitSearchTerm[0] + "%' ";
+			
+			for(int i = 1; i < splitSearchTerm.length; i++) {
+				linesQuery += "OR shifted_descriptor LIKE '%" + splitSearchTerm[i] + "%' ";
+			}
+		} else if (searchType.equals("not")) {
+			linesQuery += "AND shifted_descriptor NOT LIKE '%" + splitSearchTerm[0] + "%' ";
+			
+			for(int i = 1; i < splitSearchTerm.length; i++) {
+				linesQuery += "AND shifted_descriptor NOT LIKE '%" + splitSearchTerm[i] + "%' ";
+			}
+		} else if (searchType.equals("and")) {
+			linesQuery += "AND shifted_descriptor LIKE '%" + splitSearchTerm[0] + "%' ";
+			
+			for(int i = 1; i < splitSearchTerm.length; i++) {
+				linesQuery += "AND shifted_descriptor LIKE '%" + splitSearchTerm[i] + "%' ";
+			}
+		}
+		
+		if(sortType.equals("alpha")) {
+			linesQuery += "ORDER BY descriptor ASC ";
+		} else if(sortType.equals("access")) {
+			linesQuery += "ORDER BY access_frequency DESC ";
+		} else if(sortType.equals("payment")) {
+			linesQuery += "ORDER BY payment DESC ";
+		}
+		
+		if(page != 0 && pageSize != 0) {
+			linesQuery += "LIMIT " + offset + ", " + pageSize + ";";
+		} else {
+			linesQuery += ";";
+		}
+		
+		return linesQuery;
 	}
 }

@@ -2,6 +2,14 @@ $(document).ready(function() {
 	getAll();
 });
 
+function disableDelete() {
+	$('[id*="delete-"]').attr("disabled", true);
+}
+
+function enableDelete() {
+	$('[id*="delete-"]').attr("disabled", false);
+}
+
 function getAll() {
 	$("#resultsContainer").empty();
 	
@@ -47,6 +55,8 @@ function handleResponse(response) {
 }
 
 function deleteClicked() {
+	disableDelete();
+	
 	var lineId = $(this).attr("id").substring(7);
   
 	var requestData =
@@ -66,6 +76,7 @@ function deleteClicked() {
 		},
 		error: function(xhr, exception) {
 			alert(exception);
+			enableDelete();
 		}
 	});
 }

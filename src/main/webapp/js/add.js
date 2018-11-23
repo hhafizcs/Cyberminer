@@ -20,6 +20,20 @@ $(document).ready(function() {
     });
 });
 
+function disableAdd() {
+	$("#descriptor").attr("disabled", true);
+	$("#url").attr("disabled", true);
+	$("#payment").attr("disabled", true);
+	$("#addBtn").attr("disabled", true);
+}
+
+function enableAdd() {
+	$("#descriptor").attr("disabled", false);
+	$("#url").attr("disabled", false);
+	$("#payment").attr("disabled", false);
+	$("#addBtn").attr("disabled", false);
+}
+
 function add() {
 	var formValid = true;
 	
@@ -42,6 +56,8 @@ function add() {
 		return;
 	}
 	
+	disableAdd();
+	
 	var requestData =
 	{
 		"descriptor": $("#descriptor").val(),
@@ -57,9 +73,11 @@ function add() {
         data: JSON.stringify(requestData),
 		success: function(response) {
 			alert(response);
+			enableAdd();
 		},
 		error: function(xhr, exception) {
 			alert(exception);
+			enableAdd();
 		}
 	});
 	
